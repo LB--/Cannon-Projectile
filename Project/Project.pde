@@ -1,5 +1,9 @@
 //Processing Assignment 4, DL Nicholas Braden
 
+import java.util.ArrayList;
+
+ArrayList<Cloud> clouds = new ArrayList<Cloud>();
+
 //Variable/constant setup
 double angle = TAU/8.0; //the firing angle
 double v = 100.0; //the firing velocity
@@ -35,6 +39,13 @@ void setup()
   arial48 = loadFont("Arial-Black-48.vlw");
 
   Reset(true);
+
+  int nc = (int)(Math.random()*3.0+2.0);
+  for(int i = 0; i < nc; ++i)
+  {
+    clouds.add(new Cloud(this));
+  }
+  clouds.add(new Cloud(this, false));
 }
 
 /**
@@ -145,6 +156,19 @@ void TracePath(double to, boolean fade)
 void DrawBackground()
 {
   background(128, 192, 255); //clear last frame
+  for(int i = 0; i < clouds.size(); )
+  {
+    if(!clouds.get(i).OnScreen())
+    {
+      clouds.remove(i);
+      clouds.add(new Cloud(this, false));
+    }
+    else ++i;
+  }
+  for(Cloud c : clouds)
+  {
+    c.Draw();
+  }
 }
 
 /**
