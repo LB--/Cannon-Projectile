@@ -288,6 +288,10 @@ void DrawHelp()
     {
       if(HitsTarget())
       {
+        fill(255, 255, 255, 128); //white, faded
+        noStroke();
+        rect(width/2-150, height/2-50, 300, 100);
+        fill(0, 192, 0); //green
         textAlign(CENTER);
         text("You hit the target!\n"
             +"Press any key to make a harder shot",
@@ -297,6 +301,9 @@ void DrawHelp()
       }
       else
       {
+        fill(255, 255, 255, 128); //white, faded
+        noStroke();
+        rect(width/2-125, height/2-50, 250, 100);
         fill(255, 0, 0); //red
         textAlign(CENTER);
         text("You missed by "+(int)Math.abs(targetX-CalcX(maxT()))+" meters...\n"
