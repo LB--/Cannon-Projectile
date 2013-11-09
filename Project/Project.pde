@@ -1,4 +1,4 @@
-//Processing Assignment 3, DL Nicholas Braden
+//Processing Assignment 4, DL Nicholas Braden
 
 //Variable/constant setup
 double angle = TAU/8.0; //the firing angle
@@ -7,7 +7,11 @@ final double g = 9.80665; //the force of gravity
 double maxT(){ return 2.0*v*Math.sin(angle)/g; } //the ending time of the simulation
 final double initT = 0.0; //the starting time of the simulaton
 double curT = initT; //the current time of the simulation
-final double deltaT = 0.05; //the time step of the simulation
+final double deltaT = 0.075; //the time step of the simulation
+double targetX = 400.0;
+double targetR = 50.0;
+double targetA = 0.0;
+int attempts = 0;
 
 PFont courier = null;
 PFont arial16 = null;
@@ -23,12 +27,14 @@ State state = State.Aiming;
 void setup()
 {
   size(1280, 720); //16:9 aspect ratio
-  frame.setTitle("Processing Assignment #3"); //set window title
+  frame.setTitle("Processing Assignment #4"); //set window title
 
   //load fonts that will be used
   courier = loadFont("CourierNewPSMT-12.vlw");
   arial16 = loadFont("Arial-BoldMT-16.vlw");
   arial48 = loadFont("Arial-Black-48.vlw");
+
+  Reset(true);
 }
 
 /**
@@ -40,9 +46,18 @@ void draw()
   {
     case Aiming: //user can aim cannon
     {
+      //angle from mouse
+      angle = Math.abs(Math.atan2(0.0-mouseX, mouseY-height)+TAU/4.0);
+      if(angle > TAU/4.0) angle = TAU/4.0;
+      else if(angle < 0.0) angle = 0.0;
+
+      //velocity from mouse
+      v = Math.sqrt(Math.pow(0.0-mouseX, 2.0)+Math.pow(mouseY-height, 2.0))/5.0;
+
       background(255); //clear last frame
 
-      TracePath(maxT()/5.0); //draw partial path to help with aiming
+      DrawTarget();
+      TracePath(maxT()/3.0, true); //draw partial path to help with aiming
       DrawCannon(); //draw the cannon
     } break;
     case Simulating: //projectile is moving
@@ -57,8 +72,10 @@ void draw()
       }
       
       background(255); //clear last frame
-      
-      TracePath(Math.max(curT, maxT()/5.0)); //draw the tracer line
+
+      DrawTarget();
+      if(curT < maxT() /3.0) TracePath(maxT()/3.0, true); //keep partial path
+      TracePath(curT); //draw the tracer line over it
       DrawProjectile(); //draw the projectile itself
       DrawCannon(); //draw the cannon
     } break;
@@ -66,6 +83,7 @@ void draw()
     {
       background(255); //clear last frame
 
+      DrawTarget();
       TracePath(maxT()); //draw the full path
       DrawProjectile(); //draw the landed projectile
       DrawCannon(); //draw the cannon
@@ -92,13 +110,28 @@ double CalcY(double time)
 }
 
 /**
+ * Returns true if the current trajectory hits the target
+ */
+boolean HitsTarget()
+{
+  return CalcX(maxT()) >= targetX-targetR && CalcX(maxT()) <= targetX+targetR;
+}
+
+/**
  * Traces a dashed-line following the path of the projectile
  */
-void TracePath(double to)
+void TracePath(double to){TracePath(to, false);}
+void TracePath(double to, boolean fade)
 {
+  stroke(64); //black
+  double deltaT = 0.025; //shadows this.deltaT
   //iterate from initial time to current time
   for(double t = initT+deltaT; t < to; t += deltaT)
   {
+    if(fade && t > to/2.0) //fade out
+    {
+      stroke(64, 64, 64, 255-(int)(255.0*2.0*((t-to/2.0)/to)));
+    }
     //ony draw lines every-other time unit
     if((int)(t*10.0) % 2 == 0)
     {
@@ -110,14 +143,23 @@ void TracePath(double to)
 }
 
 /**
- * Draws the fired projectile, not past maxT
+ * Draws the fired projectile.
+ * Also shows where it is off-screen.
  */
 void DrawProjectile()
 {
   //Just a simple circle
-  fill(255, 0, 0);
+  fill(255, 0, 0); //red
+  stroke(0); //black
   ellipse((float)CalcX(curT), height-(float)CalcY(curT),
           10.0f, 10.0f);
+  if(CalcY(curT) > height) //off-screen
+  {
+    textFont(arial16);
+    textAlign(CENTER);
+    fill(0); //black
+    text((int)(CalcY(curT)-height), (float)CalcX(curT), 20f); 
+  }
 }
 
 /**
@@ -127,6 +169,7 @@ void DrawProjectile()
 void DrawCannon()
 {
   fill(92); //gray
+  stroke(0); //black
   pushMatrix();
   {
     translate(0, height); //move to bottom left corner
@@ -137,6 +180,65 @@ void DrawCannon()
 }
 
 /**
+ * Draws the target.
+ * Represented by a line at the bottom of the screen,
+ * with an identifier above it
+ */
+void DrawTarget()
+{
+  //fancy animation
+  double targetR = this.targetR*Math.sin(Math.abs(targetA))*1.25; //shadow member variable
+  if(targetA >= 0.0)
+  {
+    if(targetR <= this.targetR)
+    {
+      targetA += 0.01*TAU;
+    }
+    else
+    {
+      targetA *= -1.0;
+    }
+  }
+  else
+  {
+    if(targetR > this.targetR)
+    {
+      targetA -= 0.01*TAU;
+    }
+    else
+    {
+      targetR = this.targetR;
+    }
+  }
+
+  stroke(255, 0, 0); //red
+  for(int i = 1; i <= 3; ++i)
+  {
+    line((float)(targetX-this.targetR), height-i,
+         (float)(targetX+this.targetR), height-i);
+  }
+  fill(96); //dark gray
+  stroke(255); //white
+  triangle((float)targetX, height-4,
+           (float)(targetX-targetR*1.7), height-4-(float)(targetR*2.0),
+           (float)(targetX+targetR*1.7), height-4-(float)(targetR*2.0));
+  fill(255); //white
+  stroke(255, 0, 0); //red
+  ellipse((float)targetX, height-14-(float)(targetR*2.5),
+          (float)(targetR*4.0), (float)(targetR*4.0));
+  stroke(255); //white
+  fill(255, 0, 0); //red
+  ellipse((float)targetX, height-14-(float)(targetR*2.5),
+          (float)(targetR*3.0), (float)(targetR*3.0));
+  fill(255); //white
+  ellipse((float)targetX, height-14-(float)(targetR*2.5),
+          (float)(targetR*2.0), (float)(targetR*2.0));
+  fill(255, 0, 0); //red
+  ellipse((float)targetX, height-14-(float)(targetR*2.5),
+          (float)targetR, (float)targetR);
+}
+
+/**
  * Draws real-time debugging info to the screen,
  * such as the variables affecting the simulation,
  * but without spoiling the max time until the end
@@ -144,18 +246,22 @@ void DrawCannon()
 void DrawDebug()
 {
   textFont(courier);
+  textAlign(LEFT);
   fill(0); //black
-  text(" angle = "+String.format("%.2f degrees", angle/TAU*360.0)+"\n" //show in degrees
-      +"     v = "+String.format("%.2f meters per second", v)+"\n"
-      +"     g = "+String.format("%.2f meters per second", g)+"\n"
-      +"  maxT = "+(state != State.Ended ? (state == State.Aiming ? "(???)" : "(...)") //don't spoil max time
-                                         : String.format("%.2f seconds", maxT()))+"\n"
-      +" initT = "+String.format("%.2f seconds", initT)+"\n"
-      +"  curT = "+String.format("%.2f seconds", curT)+"\n"
-      +"     x = "+String.format("%.2f meters from cannon", CalcX(curT))+"\n"
-      +"     y = "+String.format("%.2f meters above sea level", CalcY(curT))+"\n"
-      +"deltaT = "+String.format("%.2f seconds per frame", deltaT)+"\n"
-      +"   fps = "+String.format("%.2f frames per second", frameRate),
+  text("   angle = "+String.format("%.2f degrees", angle/TAU*360.0)+"\n" //show in degrees
+      +"       v = "+String.format("%.2f meters per second", v)+"\n"
+      +"       g = "+String.format("%.2f meters per second", g)+"\n"
+      +"  deltaT = "+String.format("%.2f seconds per frame", deltaT)+"\n"
+      +"   initT = "+String.format("%.2f seconds", initT)+"\n"
+      +"    curT = "+String.format("%.2f seconds", curT)+"\n"
+      +"    maxT = "+String.format("%.2f seconds", maxT())+"\n"
+      +"       x = "+String.format("%.2f meters from cannon", CalcX(curT))+"\n"
+      +"       y = "+String.format("%.2f meters above sea level", CalcY(curT))+"\n"
+      +"  target = "+String.format("%.2f meters from cannon", targetX)+"\n"
+      +"           "+String.format("%.2f meters wide", targetR*2.0)+"\n"
+      +"    hits = "+HitsTarget()+"\n"
+      +"attempts = "+attempts+" projectiles fired"+"\n"
+      +"     fps = "+String.format("%.2f frames per second", frameRate),
        10, 10,
        width-20, height-20);
 }
@@ -166,23 +272,39 @@ void DrawDebug()
 void DrawHelp()
 {
   textFont(arial16);
+  textAlign(LEFT);
   fill(0, 192, 0); //green
   switch(state)
   {
     case Aiming:
     {
-      text("• Aim with Left and Right arrow keys\n"
-          +"• adjust Power with Up and Down arrow keys\n"
-          +"• press Space to fire the shot!",
+      text("• Aim with your Mouse\n"
+          +"• Power is based on Mouse distance from Cannon\n"
+          +"• Click to fire the shot!",
            10, 192,
            width-20, height-20);
     } break;
     case Ended:
     {
-      text("You made it approximately "+(int)(CalcX(curT)+0.5)+" meters\n"
-          +"Press any key to make another shot",
-           10, 192,
-           width-20, height-20);
+      if(HitsTarget())
+      {
+        textAlign(CENTER);
+        text("You hit the target!\n"
+            +"Press any key to make a harder shot",
+             width/2, height/2+20);
+        textFont(arial48);
+        text("IT'S A HIT!", width/2, height/2);
+      }
+      else
+      {
+        fill(255, 0, 0); //red
+        textAlign(CENTER);
+        text("You missed by "+(int)Math.abs(targetX-CalcX(maxT()))+" meters...\n"
+            +"Press any key to try again",
+             width/2, height/2+20);
+        textFont(arial48);
+        text("MISS", width/2, height/2);
+      }
     } break;
     default: break;
   }
@@ -191,53 +313,45 @@ void DrawHelp()
 /**
  * Resets some variables but leaves others intact
  */
-void Reset()
+void Reset(){Reset(false);}
+void Reset(boolean force)
 {
   state = State.Aiming;
   curT = initT;
+
+  if(HitsTarget() || force)
+  {
+    //randomize target
+    targetX = Math.random()*(width-targetR*2.0)+targetR;
+    if(!force) targetR *= 0.5;
+    targetA = 0.0;
+  }
 }
 
 /**
- * Allows aiming and restarting
+ * Allows restarting
  */
 void keyPressed()
 {
+  if(state == State.Ended)
+  {
+    Reset();
+  }
+  if(key == 't') Reset(true);
+}
+/**
+ * Allows firing and restarting
+ */
+void mouseClicked()
+{
   switch(state)
   {
-    case Aiming: //react to arrow keys
+    case Aiming:
     {
-      if(key == CODED)
-      {
-        switch(keyCode)
-        {
-          case UP:
-          {
-            v += 1.0;
-          } break;
-          case DOWN:
-          {
-            v -= 1.0;
-            if(v < 0.0) v = 0.0;
-          } break;
-          case LEFT:
-          {
-            angle += radians((float)1.0);
-            if(angle > TAU/4.0) angle = TAU/4.0;
-          } break;
-          case RIGHT:
-          {
-            angle -= radians((float)1.0);
-            if(angle < 0) angle = 0;
-          } break;
-          default: break;
-        }
-      }
-      else if(key == ' ') //fire!
-      {
-        state = State.Simulating;
-      }
+      state = State.Simulating;
+      ++attempts;
     } break;
-    case Ended: //restart upon keypress
+    case Ended:
     {
       Reset();
     } break;
