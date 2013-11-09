@@ -54,7 +54,7 @@ void draw()
       //velocity from mouse
       v = Math.sqrt(Math.pow(0.0-mouseX, 2.0)+Math.pow(mouseY-height, 2.0))/5.0;
 
-      background(255); //clear last frame
+      DrawBackground();
 
       DrawTarget();
       TracePath(maxT()/3.0, true); //draw partial path to help with aiming
@@ -63,7 +63,7 @@ void draw()
     case Simulating: //projectile is moving
     {
       curT += deltaT; //increment time (time 0 never drawn)
-      if(curT >= maxT()) //finihed simulation
+      if(curT >= maxT() || CalcX(curT) > width) //finished simulation
       {
         curT = maxT();
         state = State.Ended; //stop simulating
@@ -71,7 +71,7 @@ void draw()
         return; //keep last frame, don't redraw
       }
       
-      background(255); //clear last frame
+      DrawBackground();
 
       DrawTarget();
       if(curT < maxT() /3.0) TracePath(maxT()/3.0, true); //keep partial path
@@ -81,7 +81,7 @@ void draw()
     } break;
     case Ended: //simulation is over; projectile landed
     {
-      background(255); //clear last frame
+      DrawBackground();
 
       DrawTarget();
       TracePath(maxT()); //draw the full path
@@ -140,6 +140,11 @@ void TracePath(double to, boolean fade)
            (float)CalcX(t),        height-(float)CalcY(t));
     }
   }
+}
+
+void DrawBackground()
+{
+  background(128, 192, 255); //clear last frame
 }
 
 /**
@@ -271,13 +276,16 @@ void DrawDebug()
  */
 void DrawHelp()
 {
-  textFont(arial16);
-  textAlign(LEFT);
-  fill(0, 192, 0); //green
   switch(state)
   {
     case Aiming:
     {
+      fill(255, 255, 255, 128); //white, faded
+      noStroke();
+      rect(5, 192-5, 400, 16*3+10);
+      textFont(arial16);
+      textAlign(LEFT);
+      fill(0, 192, 0); //green
       text("• Aim with your Mouse\n"
           +"• Power is based on Mouse distance from Cannon\n"
           +"• Click to fire the shot!",
@@ -291,8 +299,9 @@ void DrawHelp()
         fill(255, 255, 255, 128); //white, faded
         noStroke();
         rect(width/2-150, height/2-50, 300, 100);
-        fill(0, 192, 0); //green
+        textFont(arial16);
         textAlign(CENTER);
+        fill(0, 192, 0); //green
         text("You hit the target!\n"
             +"Press any key to make a harder shot",
              width/2, height/2+20);
@@ -304,8 +313,9 @@ void DrawHelp()
         fill(255, 255, 255, 128); //white, faded
         noStroke();
         rect(width/2-125, height/2-50, 250, 100);
-        fill(255, 0, 0); //red
+        textFont(arial16);
         textAlign(CENTER);
+        fill(255, 0, 0); //red
         text("You missed by "+(int)Math.abs(targetX-CalcX(maxT()))+" meters...\n"
             +"Press any key to try again",
              width/2, height/2+20);
