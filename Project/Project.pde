@@ -169,6 +169,7 @@ void DrawBackground()
   {
     c.Draw();
   }
+  //filter(BLUR, 3);
 }
 
 /**
@@ -355,18 +356,28 @@ void DrawHelp()
  * Resets some variables but leaves others intact
  */
 void Reset(){Reset(false);}
-void Reset(boolean force)
+void Reset(boolean total)
 {
   state = State.Aiming;
   curT = initT;
 
-  if(HitsTarget() || force)
+  if(HitsTarget() || total)
   {
     //randomize target
-    targetX = Math.random()*(width-targetR*2.0)+targetR;
-    if(!force) targetR *= 0.5;
+    RandomizeTarget();
+    targetR *= 0.5;
     targetA = 0.0;
   }
+  if(total)
+  {
+    attempts = 0;
+    targetR = 50.0;
+  }
+}
+
+void RandomizeTarget()
+{
+  targetX = Math.random()*(width-targetR*2.0)+targetR;
 }
 
 /**
@@ -378,7 +389,16 @@ void keyPressed()
   {
     Reset();
   }
-  if(key == 't') Reset(true);
+  if(key == 'r') Reset(true);
+  else if(key == 't')
+  {
+    RandomizeTarget();
+    targetA = 0.0;
+  }
+  else if(key == 'c')
+  {
+    clouds.add(new Cloud(this));
+  }
 }
 /**
  * Allows firing and restarting

@@ -36,12 +36,8 @@ public class Cloud
   }
   public boolean OnScreen()
   {
-    boolean visible = false;
-    for(WaterPuff puff : puffs)
-    {
-      visible = visible || puff.OnScreen();
-    }
-    return visible;
+    if(p == null) return true;
+    return p.width > x-150.0;
   }
   private class WaterPuff
   {
