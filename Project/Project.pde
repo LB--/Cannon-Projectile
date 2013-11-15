@@ -1,4 +1,4 @@
-//Processing Assignment 4, DL Nicholas Braden
+//Processing Assignment 5, DL Nicholas Braden
 
 import java.util.ArrayList;
 
@@ -16,13 +16,17 @@ double targetX = 400.0;
 double targetR = 50.0;
 double targetA = 0.0;
 int attempts = 0;
+final int maxAttempts = 5;
 
 PFont courier = null;
 PFont arial16 = null;
 PFont arial48 = null;
 
 //See State.java for State enumeration
-State state = State.Aiming;
+State state = State.Intro;
+String introText = "Launch Target";
+
+PImage background = null;
 
 /**
  * Initialize the program
@@ -31,12 +35,14 @@ State state = State.Aiming;
 void setup()
 {
   size(1280, 720); //16:9 aspect ratio
-  frame.setTitle("Processing Assignment #4"); //set window title
+  frame.setTitle("Processing Assignment #5"); //set window title
 
   //load fonts that will be used
   courier = loadFont("CourierNewPSMT-12.vlw");
   arial16 = loadFont("Arial-BoldMT-16.vlw");
   arial48 = loadFont("Arial-Black-48.vlw");
+
+  background = loadImage("Background.png");
 
   Reset(true);
 
@@ -55,6 +61,21 @@ void draw()
 {
   switch(state) //act depending on which state we are in
   {
+    case Intro: //on title screen
+    {
+      DrawBackground();
+      if(attempts >= maxAttempts) DrawTarget();
+      TracePath(maxT()/3.0, true);
+      DrawCannon();
+      filter(BLUR, 6);
+      textFont(arial48);
+      textAlign(CENTER);
+      if(attempts >= maxAttempts) fill(255, 0, 0);
+      else fill(0);
+      text(introText, width/2, height/2);
+      textFont(arial16);
+      text("Click or press any key to play", width/2, height/2+32);
+    } break;
     case Aiming: //user can aim cannon
     {
       //angle from mouse
@@ -78,7 +99,6 @@ void draw()
       {
         curT = maxT();
         state = State.Ended; //stop simulating
-        DrawDebug(); //show how to restart simulation
         return; //keep last frame, don't redraw
       }
       
@@ -101,7 +121,7 @@ void draw()
     } break;
     default: break;
   }
-  DrawDebug(); //show variables in real time
+//  DrawDebug(); //show variables in real time
   DrawHelp(); //show user what to do
 }
 
@@ -156,6 +176,14 @@ void TracePath(double to, boolean fade)
 void DrawBackground()
 {
   background(128, 192, 255); //clear last frame
+
+  image(background, 0, 0, width, height);
+
+  textFont(arial48);
+  textAlign(CENTER);
+  fill(0); //black
+  text(""+(maxAttempts-attempts), width-48, 64);
+
   for(int i = 0; i < clouds.size(); )
   {
     if(!clouds.get(i).OnScreen())
@@ -169,7 +197,6 @@ void DrawBackground()
   {
     c.Draw();
   }
-  //filter(BLUR, 3);
 }
 
 /**
@@ -290,7 +317,8 @@ void DrawDebug()
       +"  target = "+String.format("%.2f meters from cannon", targetX)+"\n"
       +"           "+String.format("%.2f meters wide", targetR*2.0)+"\n"
       +"    hits = "+HitsTarget()+"\n"
-      +"attempts = "+attempts+" projectiles fired"+"\n"
+      +"attempts = "+attempts+" out of "+maxAttempts+" projectiles fired"+"\n"
+      +"   state = "+state+"\n"
       +"     fps = "+String.format("%.2f frames per second", frameRate),
        10, 10,
        width-20, height-20);
@@ -307,14 +335,14 @@ void DrawHelp()
     {
       fill(255, 255, 255, 128); //white, faded
       noStroke();
-      rect(5, 192-5, 400, 16*3+10);
+      rect(5, 224-5, 400, 16*3+10);
       textFont(arial16);
       textAlign(LEFT);
       fill(0, 192, 0); //green
       text("• Aim with your Mouse\n"
           +"• Power is based on Mouse distance from Cannon\n"
           +"• Click to fire the shot!",
-           10, 192,
+           10, 224,
            width-20, height-20);
     } break;
     case Ended:
@@ -342,7 +370,7 @@ void DrawHelp()
         textAlign(CENTER);
         fill(255, 0, 0); //red
         text("You missed by "+(int)Math.abs(targetX-CalcX(maxT()))+" meters...\n"
-            +"Press any key to try again",
+            +(attempts < maxAttempts? "Press any key to try again" : "Press any key"),
              width/2, height/2+20);
         textFont(arial48);
         text("MISS", width/2, height/2);
@@ -358,7 +386,7 @@ void DrawHelp()
 void Reset(){Reset(false);}
 void Reset(boolean total)
 {
-  state = State.Aiming;
+  state = State.Intro;
   curT = initT;
 
   if(HitsTarget() || total)
@@ -367,10 +395,10 @@ void Reset(boolean total)
     RandomizeTarget();
     targetR *= 0.5;
     targetA = 0.0;
+    attempts = 0;
   }
   if(total)
   {
-    attempts = 0;
     targetR = 50.0;
   }
 }
@@ -385,9 +413,23 @@ void RandomizeTarget()
  */
 void keyPressed()
 {
+  if(state == State.Intro)
+  {
+    Reset(true);
+    state = State.Aiming;
+  }
   if(state == State.Ended)
   {
-    Reset();
+    if(attempts >= maxAttempts)
+    {
+      state = State.Intro;
+      introText = "Game Over";
+    }
+    else
+    {
+      Reset();
+      state = state.Aiming;
+    }
   }
   if(key == 'r') Reset(true);
   else if(key == 't')
@@ -407,6 +449,11 @@ void mouseClicked()
 {
   switch(state)
   {
+    case Intro:
+    {
+      Reset(true);
+      state = State.Aiming;
+    } break;
     case Aiming:
     {
       state = State.Simulating;
@@ -414,7 +461,16 @@ void mouseClicked()
     } break;
     case Ended:
     {
-      Reset();
+      if(attempts >= maxAttempts)
+      {
+        state = State.Intro;
+        introText = "Game Over";
+      }
+      else
+      {
+        Reset();
+        state = state.Aiming;
+      }
     } break;
     default: break;
   }

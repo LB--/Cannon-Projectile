@@ -6,6 +6,10 @@
 public enum State
 {
   /**
+   * User is on title screen
+   */
+  Intro,
+  /**
    * User can aim the cannon and change firing power
    */
   Aiming,
@@ -16,7 +20,18 @@ public enum State
   /**
    * The projectile has landed
    */
-  Ended
+  Ended;
+  public String toString()
+  {
+    switch(this)
+    {
+      case Intro:      return "Intro";
+      case Aiming:     return "Aiming";
+      case Simulating: return "Simulating";
+      case Ended:      return "Ended";
+    }
+    throw new IllegalStateException();
+  }
 }
 
 //end of file
