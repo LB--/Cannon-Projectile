@@ -10,29 +10,18 @@ public enum State
    */
   Intro,
   /**
-   * User can aim the cannon and change firing power
+   * User is aiming and/or watching the projectile(s) in flight
    */
-  Aiming,
-  /**
-   * User is watching the projectile in flight
-   */
-  Simulating,
-  /**
-   * The projectile has landed
-   */
-  Ended;
+  Simulating;
   public String toString()
   {
     switch(this)
     {
       case Intro:      return "Intro";
-      case Aiming:     return "Aiming";
       case Simulating: return "Simulating";
-      case Ended:      return "Ended";
     }
     throw new IllegalStateException();
   }
 }
 
 //end of file
-
